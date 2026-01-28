@@ -6,11 +6,9 @@ export default function Home() {
   const [content, setContent] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function createPaste() {
     setLoading(true);
-    setError(null);
     setResult(null);
 
     try {
@@ -26,45 +24,51 @@ export default function Home() {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error("Failed to create paste");
+        setResult("Error creating paste");
+        return;
       }
 
-      const data = await res.json();
-      setResult(window.location.origin + data.url);
+      setResult(`Paste created! ID: ${data.id}`);
     } catch (err) {
-      setError("Something went wrong");
+      setResult("Network error");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main style={{ padding: 40, fontFamily: "system-ui" }}>
+    <main style={{ padding: 40 }}>
       <h1>Pastebin Lite</h1>
 
       <textarea
+        placeholder="Write your paste here..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Write your paste here..."
-        rows={8}
-        style={{ width: "100%", marginBottom: 12 }}
+        style={{
+          width: "100%",
+          height: 200,
+          background: "black",
+          color: "white",
+          border: "1px solid white",
+          padding: 10,
+        }}
       />
 
-      <button onClick={createPaste} disabled={loading || !content}>
+      <br />
+      <br />
+
+      <button onClick={createPaste} disabled={loading}>
         {loading ? "Creating..." : "Create Paste"}
       </button>
 
       {result && (
-        <p style={{ marginTop: 16 }}>
-          ✅ Paste created: <br />
-          <a href={result} target="_blank">
-            {result}
-          </a>
+        <p style={{ marginTop: 20 }}>
+          {result}
         </p>
       )}
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
     </main>
   );
 }

@@ -1,9 +1,9 @@
 export default function Home() {
   return (
-    <main style={{ padding: 40, fontFamily: "system-ui" }}>
+    <main style={{ padding: "40px", color: "white" }}>
       <h1>Pastebin Lite</h1>
-      <p>Welcome! This is a lightweight Pastebin clone.</p>
-      <p>Frontend is live. Backend APIs will be added next.</p>
+      <p>Frontend is LIVE ✅</p>
+      <p>Deployment successful 🎉</p>
     </main>
   );
 }

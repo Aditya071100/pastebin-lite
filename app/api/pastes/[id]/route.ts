@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "../../../../lib/db";
 
@@ -13,24 +15,20 @@ export async function GET(
     WHERE id = ${id}
   `;
 
-  // postgres returns an array directly
   if (result.length === 0) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
   const paste = result[0];
 
-  // TTL check
   if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  // View limit check
   if (paste.max_views !== null && paste.views >= paste.max_views) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  // Increment views
   await sql`
     UPDATE pastes
     SET views = views + 1

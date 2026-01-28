@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "../../../lib/db";
 
@@ -24,7 +26,6 @@ export async function POST(request: NextRequest) {
       RETURNING id
     `;
 
-    // postgres returns rows directly
     const id = result[0].id;
 
     return NextResponse.json({

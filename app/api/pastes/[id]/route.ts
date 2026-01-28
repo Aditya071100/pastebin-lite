@@ -13,11 +13,12 @@ export async function GET(
     WHERE id = ${id}
   `;
 
-  if (result.rows.length === 0) {
+  // postgres returns an array directly
+  if (result.length === 0) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  const paste = result.rows[0];
+  const paste = result[0];
 
   // TTL check
   if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
@@ -29,6 +30,7 @@ export async function GET(
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
+  // Increment views
   await sql`
     UPDATE pastes
     SET views = views + 1

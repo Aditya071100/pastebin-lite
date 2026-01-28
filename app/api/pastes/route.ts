@@ -1,66 +1,45 @@
-import { NextResponse } from "next/server";
-import { Pool } from "pg";
-import crypto from "crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { sql } from "@/lib/db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { content, ttl_seconds, max_views } = body;
+  const result = await sql`
+    SELECT content, expires_at, max_views, views
+    FROM pastes
+    WHERE id = ${id}
+  `;
 
-    // Validation
-    if (!content || typeof content !== "string" || content.trim() === "") {
-      return NextResponse.json(
-        { error: "content is required" },
-        { status: 400 }
-      );
-    }
-
-    if (ttl_seconds !== undefined && (!Number.isInteger(ttl_seconds) || ttl_seconds < 1)) {
-      return NextResponse.json(
-        { error: "ttl_seconds must be >= 1" },
-        { status: 400 }
-      );
-    }
-
-    if (max_views !== undefined && (!Number.isInteger(max_views) || max_views < 1)) {
-      return NextResponse.json(
-        { error: "max_views must be >= 1" },
-        { status: 400 }
-      );
-    }
-
-    const id = crypto.randomBytes(4).toString("hex");
-
-    const expires_at =
-      ttl_seconds !== undefined
-        ? new Date(Date.now() + ttl_seconds * 1000)
-        : null;
-
-    const client = await pool.connect();
-
-    await client.query(
-      `
-      INSERT INTO pastes (id, content, created_at, expires_at, max_views, views)
-      VALUES ($1, $2, NOW(), $3, $4, 0)
-      `,
-      [id, content, expires_at, max_views ?? null]
-    );
-
-    client.release();
-
-    return NextResponse.json({
-      id,
-      url: `/p/${id}`,
-    });
-  } catch (err) {
-    console.error("POST ERROR:", err);
-    return NextResponse.json(
-      { error: "invalid request" },
-      { status: 400 }
-    );
+  if (result.rows.length === 0) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
   }
+
+  const paste = result.rows[0];
+
+  // Check expiry
+  if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
+  // Check view limit
+  if (paste.max_views !== null && paste.views >= paste.max_views) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
+  // Increment views
+  await sql`
+    UPDATE pastes
+    SET views = views + 1
+    WHERE id = ${id}
+  `;
+
+  return NextResponse.json({
+    content: paste.content,
+    remaining_views:
+      paste.max_views !== null ? paste.max_views - paste.views - 1 : null,
+    expires_at: paste.expires_at,
+  });
 }

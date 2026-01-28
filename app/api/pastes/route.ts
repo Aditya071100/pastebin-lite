@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       id,
-      url: `${process.env.NEXT_PUBLIC_BASE_URL || ""}/p/${id}`,
+      url: `/p/${id}`,
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { error: "invalid request" },
       { status: 400 }

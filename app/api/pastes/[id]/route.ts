@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "../../../lib/db";
+import { sql } from "../../../../lib/db";
 
 export async function GET(
   request: NextRequest,
@@ -29,7 +29,6 @@ export async function GET(
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  // Increment views
   await sql`
     UPDATE pastes
     SET views = views + 1

@@ -1,4 +1,5 @@
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "../../../../lib/db";
@@ -9,17 +10,17 @@ export async function GET(
 ) {
   const { id } = await context.params;
 
-  const result = await sql`
+  const rows = await sql`
     SELECT content, expires_at, max_views, views
     FROM pastes
     WHERE id = ${id}
   `;
 
-  if (result.length === 0) {
+  if (rows.length === 0) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  const paste = result[0];
+  const paste = rows[0];
 
   if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
     return NextResponse.json({ error: "not found" }, { status: 404 });

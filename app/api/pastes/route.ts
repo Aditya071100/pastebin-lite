@@ -1,4 +1,5 @@
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "../../../lib/db";
@@ -20,17 +21,15 @@ export async function POST(request: NextRequest) {
         ? new Date(Date.now() + ttl_seconds * 1000)
         : null;
 
-    const result = await sql`
+    const rows = await sql`
       INSERT INTO pastes (content, expires_at, max_views, views)
       VALUES (${content}, ${expiresAt}, ${max_views ?? null}, 0)
       RETURNING id
     `;
 
-    const id = result[0].id;
-
     return NextResponse.json({
-      id,
-      url: `/p/${id}`,
+      id: rows[0].id,
+      url: `/p/${rows[0].id}`,
     });
   } catch {
     return NextResponse.json(

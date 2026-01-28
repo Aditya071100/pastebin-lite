@@ -1,9 +1,9 @@
 export default function Home() {
   return (
-    <main style={{ padding: "40px", color: "white" }}>
+    <main style={{ padding: "20px" }}>
       <h1>Pastebin Lite</h1>
-      <p>Frontend is LIVE ✅</p>
-      <p>Deployment successful 🎉</p>
+      <p>Frontend is live ✅</p>
+      <p>Backend APIs ready for testing</p>
     </main>
   );
 }

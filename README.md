@@ -1,28 +1,31 @@
 # Pastebin Lite
 
-A simple Pastebin-like web application that allows users to create text pastes and share them via a unique URL.  
-Pastes can optionally expire based on time (TTL) or number of views.
+A lightweight Pastebin-like application built using Next.js.
 
 ## Features
-- Create a text paste
-- Generate a shareable URL
-- Fetch paste content via API
-- Optional constraints:
-  - Time-based expiry (TTL)
-  - View-count limit
-- Health check endpoint
+- Create text pastes
+- Generate unique paste IDs
+- Retrieve paste content via API
+- Optional expiration (TTL)
+- Limited number of views
 
 ## Tech Stack
-- Next.js (App Router)
-- Node.js
-- PostgreSQL (Neon)
-- Deployed on Vercel
+- Next.js (Frontend + API routes)
+- TypeScript
+- PostgreSQL (NeonDB)
+- Vercel (Deployment)
 
-## API Endpoints
+## Live Demo
+https://pastebin-lite-beta-weld.vercel.app
 
-### Health Check
-`GET /api/healthz`
+## API Usage
 
-Returns:
+### Create Paste
+POST /api/pastes
+
 ```json
-{ "ok": true }
+{
+  "content": "Hello World",
+  "ttl_seconds": 300,
+  "max_views": 3
+}

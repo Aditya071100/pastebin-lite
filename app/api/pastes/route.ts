@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       RETURNING id
     `;
 
-    const id = result.rows[0].id;
+    // postgres returns rows directly
+    const id = result[0].id;
 
     return NextResponse.json({
       id,

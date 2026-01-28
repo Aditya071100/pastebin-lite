@@ -1,45 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/lib/db";
+import { sql } from "../../../lib/db";
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { content, ttl_seconds, max_views } = body;
 
-  const result = await sql`
-    SELECT content, expires_at, max_views, views
-    FROM pastes
-    WHERE id = ${id}
-  `;
+    if (!content || typeof content !== "string" || content.trim() === "") {
+      return NextResponse.json(
+        { error: "content is required" },
+        { status: 400 }
+      );
+    }
 
-  if (result.rows.length === 0) {
-    return NextResponse.json({ error: "not found" }, { status: 404 });
+    const expiresAt =
+      typeof ttl_seconds === "number"
+        ? new Date(Date.now() + ttl_seconds * 1000)
+        : null;
+
+    const result = await sql`
+      INSERT INTO pastes (content, expires_at, max_views, views)
+      VALUES (${content}, ${expiresAt}, ${max_views ?? null}, 0)
+      RETURNING id
+    `;
+
+    const id = result.rows[0].id;
+
+    return NextResponse.json({
+      id,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL || ""}/p/${id}`,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "invalid request" },
+      { status: 400 }
+    );
   }
-
-  const paste = result.rows[0];
-
-  // Check expiry
-  if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
-    return NextResponse.json({ error: "not found" }, { status: 404 });
-  }
-
-  // Check view limit
-  if (paste.max_views !== null && paste.views >= paste.max_views) {
-    return NextResponse.json({ error: "not found" }, { status: 404 });
-  }
-
-  // Increment views
-  await sql`
-    UPDATE pastes
-    SET views = views + 1
-    WHERE id = ${id}
-  `;
-
-  return NextResponse.json({
-    content: paste.content,
-    remaining_views:
-      paste.max_views !== null ? paste.max_views - paste.views - 1 : null,
-    expires_at: paste.expires_at,
-  });
 }

@@ -1,53 +1,40 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { sql } from "../../../lib/db";
+import { Pool } from "pg";
+import crypto from "crypto";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Allow only POST
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   const { content, ttl_seconds, max_views } = req.body;
 
-  // Validate content
-  if (!content || typeof content !== "string" || content.trim() === "") {
-    return res.status(400).json({ error: "content is required" });
+  if (!content) {
+    return res.status(400).json({ error: "content required" });
   }
 
-  // Validate ttl_seconds
-  if (
-    ttl_seconds !== undefined &&
-    (!Number.isInteger(ttl_seconds) || ttl_seconds < 1)
-  ) {
-    return res.status(400).json({ error: "invalid ttl_seconds" });
-  }
+  const id = crypto.randomBytes(4).toString("hex");
 
-  // Validate max_views
-  if (
-    max_views !== undefined &&
-    (!Number.isInteger(max_views) || max_views < 1)
-  ) {
-    return res.status(400).json({ error: "invalid max_views" });
-  }
+  const expiresAt = ttl_seconds
+    ? new Date(Date.now() + ttl_seconds * 1000)
+    : null;
 
-  const expiresAt =
-    typeof ttl_seconds === "number"
-      ? new Date(Date.now() + ttl_seconds * 1000)
-      : null;
+  await pool.query(
+    `
+    INSERT INTO pastes (id, content, expires_at, max_views)
+    VALUES ($1, $2, $3, $4)
+    `,
+    [id, content, expiresAt, max_views ?? null]
+  );
 
-  // Insert paste
-  const rows = await sql`
-    INSERT INTO pastes (content, expires_at, max_views, views)
-    VALUES (${content}, ${expiresAt}, ${max_views ?? null}, 0)
-    RETURNING id
-  `;
-
-  const id = rows[0].id;
-
-  return res.status(200).json({
+  res.status(200).json({
     id,
     url: `/p/${id}`,
   });
